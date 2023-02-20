@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "payment-membership",
+  "builds": [
+     { "src": "app.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+     { "src": "/(.*)", "dest": "/app.js" }
+  ]
+}
