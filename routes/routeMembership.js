@@ -10,7 +10,7 @@ var Membership = require('../models/Membership')
 const Web3 = require('web3');
 const Transaction = require('../models/Transaction');
 const web3 = new Web3('https://data-seed-prebsc-1-s1.binance.org:8545')
-
+const { BigNumber } = require('bignumber.js');
 
 
 
@@ -30,15 +30,15 @@ router.post('/update',jsonParser, async (req, res) => {
 
 		const { userId, membershipName,paymentMethod,type,amount } = req.body;
 
+		const value = Math.round((parseFloat(amount).toFixed(2)/100)*10000);
 
-		
-
-		
+const bigNumber = new BigNumber(value);
 
 
-const contractInstance = new web3.eth.Contract(
-	contractABI,contractAddress
-	)
+		const contractInstance = new web3.eth.Contract(
+			contractABI,contractAddress
+			)
+
 	
     const getMember = await Membership.findOne({name:membershipName});
 
@@ -55,13 +55,13 @@ const contractInstance = new web3.eth.Contract(
 		{
 		  from: "0x98C4cB2832685d70391682e4880d3C4CE24043Dc",
 		  to: contractAddress,
-		  gas: await contractInstance.methods.transfer(getUserAddress.publicKey,(parseFloat(amount).toFixed(2)/100)*10000)
+		  gas: await contractInstance.methods.transfer(getUserAddress.publicKey,bigNumber)
 			.estimateGas({
 				//admin address
 			  from: "0x98C4cB2832685d70391682e4880d3C4CE24043Dc",
 			}),
 		  nonce: AdminNonce,
-		  data:await contractInstance.methods.transfer(getUserAddress.publicKey,(parseFloat(amount).toFixed(2)/100)*10000).encodeABI()
+		  data:await contractInstance.methods.transfer(getUserAddress.publicKey,bigNumber).encodeABI()
 		},
 		//adminprivatekey
 		"0xc5718b7a510cb18411c9b1278a3f4ec7b5e28dd9ce0fec6474c6811628e9b498",
