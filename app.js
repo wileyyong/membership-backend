@@ -113,7 +113,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({origin:'*'}));
+app.use(cors())
 app.use('/', login);
 app.use('/booking', bookingRoute);
 app.use('/register', registerRouter);  // To register page 

@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 
 		const {user_id} = req.body
 
-		const response = await Transaction.find({user_id:user_id})
+		const response = await Transaction.find({user_id:user_id}).sort({ createdAt: -1 })
 
 		res.status(201).json(response)
 	} catch (e) {
