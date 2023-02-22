@@ -1,158 +1,202 @@
-var express = require('express');
-var router = express.Router();
+var express = require('express')
+var router = express.Router()
 var User = require('../models/User')
-var bcrypt = require('bcrypt');
-var moment = require('moment');
+var bcrypt = require('bcrypt')
+var moment = require('moment')
 var bodyParser = require('body-parser')
+var Transaction = require('../models/Transaction')
+var Membership = require('../models/Membership')
+const { default: Stripe } = require('stripe')
 
-var Membership = require('../models/Membership');
-const { default: Stripe } = require('stripe');
+const contractAddress = require('../web3/JJT/contractAddress/contractAddress')
+const contractABI = require('../web3/JJT/contractABI/contractABI.json')
+const Web3 = require('web3');
+const web3 = new Web3('https://data-seed-prebsc-1-s1.binance.org:8545')
+const { BigNumber } = require('bignumber.js');
 
-const stripe = require("stripe")("sk_test_51MbfzNLlfbjWJ6bQJKql2RRTkphGHBNOm8TeNw5UYvKDgiv1uNMllnKRmGFg0zlSw2Wt2lCFUfrZhErsTBVQ9dmc000iekoB3L");
 
+
+
+
+
+const stripe = require('stripe')(
+  'sk_test_51MbfzNLlfbjWJ6bQJKql2RRTkphGHBNOm8TeNw5UYvKDgiv1uNMllnKRmGFg0zlSw2Wt2lCFUfrZhErsTBVQ9dmc000iekoB3L',
+)
 
 router.get('/', (req, res) => {
-    res.send("Register Here")
-});
+  res.send('Register Here')
+})
 
 //Body-Parser
 var jsonParser = bodyParser.json()
 
-router.post('/', jsonParser, async (req, res) => {
-	//Hash Password 
-	// console.log(req.body)
-	let { amount, id } = req.body;
-    
-	try {
-const body = req.body;
 
-    const options = {
-    ...body,
-      amount: 1000,
-      currency: 'usd',
-      description: 'Software development services',
-    };
-  
-    const payment = await stripe.paymentIntents.create(options);
-
-    // const payment = await stripe.paymentIntents.create({
-    //   amount: parseInt(amount),
-    //   currency: "usd",
-    //   payment_method_types: ['card'],
-    //   confirm: true,
-    // });
-
-
-
-    // const payment =  await stripe.checkout.sessions.create({
-    //   payment_method_types: ["card"],
-    
-    //   line_items: [
-    //     {
-    //       price_data: {
-    //         currency: "usd",
-    //         product_data: {
-    //           name: "T-shirt",
-    //         },
-    //         unit_amount: 40000,
-    //       },
-    //       quantity: 1,
-    //     },
-    //   ],
-    //   mode: "payment",
-    //   success_url: "http://localhost:3000/stripepaymentsuccess",
-    //   cancel_url: "http://localhost:3000/stripepaymentcancel",
-    // });
-    console.log(payment);
-    // console.log("stripe-routes.js 19 | payment", payment);
-    res.json({
-      message: "Payment Successful",
-      success: true,
-    });
-  } catch (error) {
-    console.log(error.message,'error');
-    // console.log("stripe-routes.js 17 | error", error);
-    res.json({
-      message: "Payment Failed",
-      success: false,
-    });
-  }
-
-
-});
-
-
-router.post('/create',async(req,res)=>{
+router.post('/payment_v2', async (req, res) => {
   try {
-
-    let body = req.body;
-    
-  
-    const options = {
-      ...body,
-      currency:'INR',
-      description: 'Token development services',
-    };
-
-
-
-    const paymentIntent = await stripe.paymentIntents.create(options);
-    
-    res.json(paymentIntent);
-  } catch (error) {
-    res.json({
-      message: "Payment Failed",
-      success: false,
-    });
-  }
-})
-
-
-router.post('/process-payment',async(req,res)=>{
-  try {
-
-    const {paymentMethodId,amount,currency} = req.body
-
-    console.log(paymentMethodId,amount,currency);
-
-  
-
-    // Create a new customer and attach the payment method to it
-    const customer = await stripe.customers.create();
-    await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customer.id
-    });
-console.log(customer);
-    const paymentIntent = await stripe.paymentIntents.create({
-      payment_method: paymentMethodId,
+    const {
+      userId,
+      membershipName,
+      type,
       amount,
-      currency,
-      customer:customer.id,
-      confirm: true
-    });
+      cardNumber,
+      expiryMonth,
+      expiryYear,
+      cvc,
+    } = req.body
 
-    stripe.charges.create({
-      amount: 1000, // The amount in cents
+    console.log(userId,
+      membershipName,
+      type,
+      amount,
+      cardNumber,
+      expiryMonth,
+      expiryYear,
+      cvc,);
+
+    const token = await stripe.tokens.create({
+      card: {
+        number: cardNumber,
+        exp_month: parseInt(expiryMonth),
+        exp_year: parseInt(expiryYear),
+        cvc: parseInt(cvc),
+      },
+    })
+
+    const charge = await stripe.charges.create({
+      amount: Math.round(amount * 100),
       currency: 'usd',
-      customer:customer.id, // The ID of a payment source, such as a card token or source object
-    }, (err, charge) => {
-      if (err) {
-        console.log(err);
-        // Handle the error appropriately
-      } else {
-        res.json(charge)
-        // The charge ID (transaction ID) is accessible in the 'id' field of the charge object
-      }
-    });
+      source: token.id,
+    })
 
   
 
-  } catch (error) {
-    res.json({
-      status:false,
-      message:error.message
-    })
+    let newTransaction = {}
+    newTransaction.ccType = charge.payment_method_details.card.brand;
+    newTransaction.paidAmount = amount
+    newTransaction.paymentMethod = charge
+    newTransaction.user_id = userId
+    newTransaction._createdAt = new Date()
+    newTransaction._updatedAt = new Date()
+
+    newTransaction.number = charge.id
+    newTransaction.status = true
+
+    const response = await Transaction.create(newTransaction)
+
+    const value = Math.round((parseFloat(amount) / 100).toFixed(2) * 10000)
+
+    const bigNumber = new BigNumber(value)
+
+    const contractInstance = new web3.eth.Contract(contractABI, contractAddress)
+
+    const getMember = await Membership.findOne({ name: membershipName })
+
+    // console.log(getMember);
+
+    const getUserAddress = await User.findById({ _id: userId })
+
+    const AdminNonce = await web3.eth.getTransactionCount(
+      '0x98C4cB2832685d70391682e4880d3C4CE24043Dc',
+      'pending',
+    )
+
+    console.log(contractAddress)
+
+    const AdminSignTx = await web3.eth.accounts.signTransaction(
+      {
+        from: '0x98C4cB2832685d70391682e4880d3C4CE24043Dc',
+        to: contractAddress,
+        gas: await contractInstance.methods
+          .transfer(getUserAddress.publicKey, bigNumber)
+          .estimateGas({
+            //admin address
+            from: '0x98C4cB2832685d70391682e4880d3C4CE24043Dc',
+          }),
+        nonce: AdminNonce,
+        data: await contractInstance.methods
+          .transfer(getUserAddress.publicKey, bigNumber)
+          .encodeABI(),
+      },
+      //adminprivatekey
+      '0xc5718b7a510cb18411c9b1278a3f4ec7b5e28dd9ce0fec6474c6811628e9b498',
+    )
+
+    console.log(AdminSignTx, 'adminsign')
+    await web3.eth.sendSignedTransaction(
+      AdminSignTx.rawTransaction,
+      async function (error, hash) {
+        if (!error) {
+         
+          const updateTransaction = await Transaction.findOneAndUpdate(
+            { number: charge?.id },
+            {
+              $set: {
+                tokenTransactionHash: hash,
+              },
+            },
+            { new: true },
+          )
+
+          const a = {
+            renew:
+              type === 'Monthly'
+                ? moment(currentDate).add(1, 'M').format('YYYY-MM-DD')
+                : moment(currentDate).add(1, 'Y').format('YYYY-MM-DD'),
+            type: type,
+          }
+
+          console.log(a)
+          var currentDate = moment().format('YYYY-MM-DD')
+          console.log(amount)
+          const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+              $set: {
+                membership: getMember._id,
+                dop: moment().format('YYYY-MM-DD'),
+                renew:
+                  type === 'Monthly'
+                    ? moment(currentDate).add(1, 'M').format('YYYY-MM-DD')
+                    : moment(currentDate).add(1, 'Y').format('YYYY-MM-DD'),
+                type: type,
+                isActive: true,
+              },
+            },
+            { new: true },
+          )
+
+          const updatedValue = await User.findByIdAndUpdate(
+            userId,
+            {
+              $inc: {
+                token: parseFloat(amount) / 100,
+                amount: parseFloat(amount),
+              },
+            },
+            { new: true },
+          )
+
+          const userData = await User.findById({ _id: userId }).populate(
+            'membership',
+          )
+
+          const sendData = {
+            cardType:charge.payment_method_details.card.brand,
+            paidAmount:amount,
+            plan:membershipName,
+            data:userData,
+            transactionId:charge.id,
+            transactionUrl:charge.receipt_url
+          }
+
+          res.status(200).json({ message: 'Payment successful', sendData })
+        }
+      },
+    )
+  } catch (err) {
+    console.error(err.message,'message')
+    res.status(503).send({message:err.message})
   }
 })
 
-module.exports = router;
+module.exports = router

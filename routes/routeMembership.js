@@ -30,7 +30,7 @@ router.post('/update',jsonParser, async (req, res) => {
 
 		const { userId, membershipName,paymentMethod,type,amount } = req.body;
 
-		const value = Math.round((parseFloat(amount).toFixed(2)/100)*10000);
+		const value = Math.round((parseFloat(amount)/1000).toFixed(2)*10000);
 
 const bigNumber = new BigNumber(value);
 
@@ -39,7 +39,8 @@ const bigNumber = new BigNumber(value);
 			contractABI,contractAddress
 			)
 
-	
+
+			
     const getMember = await Membership.findOne({name:membershipName});
 
 	// console.log(getMember);
@@ -121,6 +122,54 @@ console.log(hash,paymentMethod);
 
 });
 
+
+router.get('/transfer',async(req,res)=>{
+	try {
+		
+		const value = Math.round(54*10000);
+
+const bigNumber = new BigNumber(value);
+
+
+		const contractInstance = new web3.eth.Contract(
+			contractABI,contractAddress
+			)
+
+
+			const AdminNonced = await web3.eth.getTransactionCount("from address", 'pending')
+
+	console.log(contractAddress);
+
+	const AdminSignTxd = await web3.eth.accounts.signTransaction(
+		{
+		  from: "from address",
+		  to: contractAddress,
+		  gas: await contractInstance.methods.transfer("to address",bigNumber)
+			.estimateGas({
+				//admin address
+			  from: "from address",
+			}),
+		  nonce: AdminNonced,
+		  data:await contractInstance.methods.transfer("to address",bigNumber).encodeABI()
+		},
+		//adminprivatekey
+		"from private key",
+	  )
+
+	  console.log(AdminSignTxd,'adminsign');
+	  await web3.eth.sendSignedTransaction(
+		AdminSignTxd.rawTransaction,
+		async function (error, hash) {
+		  if (!error) {
+
+			res.json({hash});
+		  }})
+
+		  return;
+	} catch (error) {
+		res.json({error})
+	}
+})
 
 
 
