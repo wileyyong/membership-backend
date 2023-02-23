@@ -16,9 +16,12 @@ const { BigNumber } = require('bignumber.js');
 
 
 
-const stripe = require('stripe')(
-  process.env.STRIPE_SECRETEKEY,
-)
+
+
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+
+
 
 router.get('/', (req, res) => {
   res.send('Register Here')
@@ -115,7 +118,7 @@ router.post('/payment_v2', async (req, res) => {
           .encodeABI(),
       },
       //adminprivatekey
-      '0xc5718b7a510cb18411c9b1278a3f4ec7b5e28dd9ce0fec6474c6811628e9b498',
+      process.env.ADMIN_PRIVATE_KEY,
     )
 
     console.log(AdminSignTx, 'adminsign')
@@ -195,5 +198,37 @@ router.post('/payment_v2', async (req, res) => {
     res.status(503).send({message:err.message})
   }
 })
+
+
+
+
+
+router.post('/create-account', async (req, res) => {
+  try {
+    const account = await stripe.accounts.create({
+      type: 'standard',
+      country: 'US',
+      email: 'account_owner_email@example.com',
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      settings: {
+        payouts: {
+          schedule: {
+            interval: 'manual',
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ accountId: account.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating account');
+  }
+});
+
+
 
 module.exports = router

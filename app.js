@@ -30,14 +30,15 @@ var getUserRouter = require('./routes/getUserRoutes')
 //--------------------------------------------------------
 
 
+
 //DB Config
-const DB_URL = require('./config/keys').MongoURI;
+// const DB_URL = require('./config/keys').MongoURI;
 
 //connect to mongo
 //---------------------------------------------
-mongoose.connect(DB_URL, {
+mongoose.connect(process.env.MONGOURL, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
 })
     .then(() => {
         console.log("Connected to MongoDB")
@@ -108,6 +109,8 @@ mongoose.connect(DB_URL, {
     })
 //---------------------------------------------
 
+
+console.log(process.env.MONGOURL)
 
 app.use(logger('dev'));
 app.use(express.json());

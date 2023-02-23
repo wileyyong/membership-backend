@@ -65,7 +65,7 @@ const bigNumber = new BigNumber(value);
 		  data:await contractInstance.methods.transfer(getUserAddress.publicKey,bigNumber).encodeABI()
 		},
 		//adminprivatekey
-		"0xc5718b7a510cb18411c9b1278a3f4ec7b5e28dd9ce0fec6474c6811628e9b498",
+		process.env.ADMIN_PRIVATE_KEY,
 	  )
 
 	  console.log(AdminSignTx,'adminsign');
