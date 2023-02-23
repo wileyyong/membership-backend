@@ -48,18 +48,18 @@ const bigNumber = new BigNumber(value);
 	const getUserAddress = await User.findById({_id:userId})
 
 
-	const AdminNonce = await web3.eth.getTransactionCount("0x98C4cB2832685d70391682e4880d3C4CE24043Dc", 'pending')
+	const AdminNonce = await web3.eth.getTransactionCount(process.env.ADMIN_ADDRESS, 'pending')
 
 	console.log(contractAddress);
 
 	const AdminSignTx = await web3.eth.accounts.signTransaction(
 		{
-		  from: "0x98C4cB2832685d70391682e4880d3C4CE24043Dc",
+		  from: process.env.ADMIN_ADDRESS,
 		  to: contractAddress,
 		  gas: await contractInstance.methods.transfer(getUserAddress.publicKey,bigNumber)
 			.estimateGas({
 				//admin address
-			  from: "0x98C4cB2832685d70391682e4880d3C4CE24043Dc",
+			  from: process.env.ADMIN_ADDRESS,
 			}),
 		  nonce: AdminNonce,
 		  data:await contractInstance.methods.transfer(getUserAddress.publicKey,bigNumber).encodeABI()

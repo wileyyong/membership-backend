@@ -5,7 +5,8 @@ var logger = require('morgan');
 var mongoose = require('mongoose');
 var passport = require('passport');
 const cors = require('cors')
-
+const dotenv = require('dotenv')
+dotenv.config({ path: './.env' });
 var Membership = require('./models/Membership')
 
 var app = express();
