@@ -43,66 +43,72 @@ mongoose.connect(process.env.MONGOURL, {
     .then(() => {
         console.log("Connected to MongoDB")
 
-        // let membership = 
-        //     // {
-        //     //     name: "Basic",
-        //     //     month: 4.99,
-        //     //     annual: 4.5,
-        //     //     bids: 50,
-        //     //     skills: 50,
-        //     //     rewards: true,
-        //     //     freeSealed: true,
-        //     //     eligible: true,
-        //     //     coverPhoto: true,
-        //     //     highlighted: false,
-        //     //     extensions: false
-        //     // }
-        //     // {
-        //     //     name: "Plus",
-        //     //     month: 9.99,
-        //     //     annual: 8.9,
-        //     //     bids: 50,
-        //     //     skills: 50,
-        //     //     rewards: true,
-        //     //     freeSealed: true,
-        //     //     eligible: true,
-        //     //     coverPhoto: true,
-        //     //     highlighted: true,
-        //     //     extensions: true
-        //     // }
-        //     // {
-        //     //     name: "Professional",
-        //     //     month: 49.0,
-        //     //     annual: 39.9,
-        //     //     bids: 50,
-        //     //     skills: 50,
-        //     //     rewards: true,
-        //     //     freeSealed: true,
-        //     //     eligible: true,
-        //     //     coverPhoto: true,
-        //     //     highlighted: false,
-        //     //     extensions: false
-        //     // }
-        //     {
-        //         name: "Premier",
-        //         month: 99.0,
-        //         annual: 79.9,
-        //         bids: 50,
-        //         skills: 50,
-        //         rewards: true,
-        //         freeSealed: true,
-        //         eligible: true,
-        //         coverPhoto: true,
-        //         highlighted: true,
-        //         extensions: true
-        //     }
-        
-        // let newUser = new Membership(membership)
-        // // console.log(newUser)
-        // newUser.save((err, reslut) => {
-        //     if (err) console.log(err)
-        //     // else res.status(201).json(reslut)
-        // })
+        let memberships = [
+            {
+                name: "Basic",
+                month: 4.99,
+                annual: 4.5,
+                bids: 50,
+                skills: 50,
+                rewards: true,
+                freeSealed: true,
+                eligible: true,
+                coverPhoto: true,
+                highlighted: false,
+                extensions: false
+            },
+            {
+                name: "Plus",
+                month: 9.99,
+                annual: 8.9,
+                bids: 50,
+                skills: 50,
+                rewards: true,
+                freeSealed: true,
+                eligible: true,
+                coverPhoto: true,
+                highlighted: true,
+                extensions: true
+            },
+            {
+                name: "Professional",
+                month: 49.0,
+                annual: 39.9,
+                bids: 50,
+                skills: 50,
+                rewards: true,
+                freeSealed: true,
+                eligible: true,
+                coverPhoto: true,
+                highlighted: false,
+                extensions: false
+            },
+            {
+                name: "Premier",
+                month: 99.0,
+                annual: 79.9,
+                bids: 50,
+                skills: 50,
+                rewards: true,
+                freeSealed: true,
+                eligible: true,
+                coverPhoto: true,
+                highlighted: true,
+                extensions: true
+            }
+        ];
+        const existingMembership = Membership.findOne({});
+        if (!existingMembership) {
+            for (i = 0; i < memberships.length; i ++) {
+                const membership = memberships[i];
+                let newUser = new Membership(membership)
+                // console.log(newUser)
+                newUser.save((err, reslut) => {
+                    if (err) console.log(err)
+                    // else res.status(201).json(reslut)
+                });
+            }
+        }
     })
     .catch(err => {
         throw err
