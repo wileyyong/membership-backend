@@ -98,7 +98,7 @@ mongoose.connect(process.env.MONGOURL, {
             }
         ];
         const existingMembership = await Membership.findOne({ name: 'Plus' });
-        if (!existingMembership._id) {
+        if (!existingMembership?._id) {
             for (i = 0; i < memberships.length; i ++) {
                 const membership = memberships[i];
                 let newUser = new Membership(membership)
