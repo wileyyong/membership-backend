@@ -40,7 +40,7 @@ mongoose.connect(process.env.MONGOURL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
-    .then(() => {
+    .then(async() => {
         console.log("Connected to MongoDB")
 
         let memberships = [
@@ -97,8 +97,8 @@ mongoose.connect(process.env.MONGOURL, {
                 extensions: true
             }
         ];
-        const existingMembership = Membership.findOne({});
-        if (!existingMembership) {
+        const existingMembership = await Membership.findOne({ name: 'Plus' });
+        if (!existingMembership._id) {
             for (i = 0; i < memberships.length; i ++) {
                 const membership = memberships[i];
                 let newUser = new Membership(membership)
